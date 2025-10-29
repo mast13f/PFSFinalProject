@@ -2,8 +2,8 @@ package main
 
 type Disease struct{
 	name string
-	transmissionRate float64
-	transmissionDistance float64
+	transmissionRate float64 
+	transmissionDistance float64 
 	recoveryRate float64
 	mortalityRate float64
 	latentPeriod int
@@ -11,15 +11,27 @@ type Disease struct{
 	immunityDuration int	
 }
 
-type Individual struct{
-	gender string
-	age int
-	healthStatus string
-	disease *Disease
-	daysInfected int
+type HealthStatus string
+
+const (
+	Healthy     HealthStatus = "Healthy"
+	Susceptible HealthStatus = "Susceptible"
+	Infected    HealthStatus = "Infected"
+	Recovered   HealthStatus = "Recovered"
+	Dead        HealthStatus = "Dead"
+)
+
+type Individual struct {
+	gender          string
+	age             int
+	healthStatus    HealthStatus
+	disease         *Disease
+	daysInfected    int
 	movementPattern *MovementPattern
-	position OrderedPair
+	position        OrderedPair
 }
+
+
 //David u can decide how to structure this
 type MovementPattern struct{
 
