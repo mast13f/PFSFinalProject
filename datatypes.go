@@ -1,11 +1,14 @@
 package main
 
 type Disease struct{
-	Name string
-	TransmissionRate float64
-	RecoveryRate float64
-	MortalityRate float64
-	LatentPeriod int
+	name string
+	transmissionRate float64
+	transmissionDistance float64
+	recoveryRate float64
+	mortalityRate float64
+	latentPeriod int
+	infectiousPeriod int
+	immunityDuration int	
 }
 
 type Individual struct{
