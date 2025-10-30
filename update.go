@@ -22,7 +22,7 @@ func UpdatePopulationHealthStatus(env *Environment, rng *rand.Rand) error {
 	}
 	rng = rngOrDefault(rng)
 
-	// 统计当前感染总数（用于 C 的超载评估）
+	// calculate total infected count for overload consideration
 	infectedTotal := 0
 	for _, p := range env.population {
 		if p != nil && p.healthStatus == Infected {
@@ -56,7 +56,7 @@ func UpdatePopulationHealthStatus(env *Environment, rng *rand.Rand) error {
 		ps[i] = probs{a: a, b: b, c: c, d: d, e: e}
 	}
 
-	// 第二遍：按统一的概率执行状态更新
+	// update statuses
 	for i, ind := range env.population {
 		if ind == nil {
 			continue
