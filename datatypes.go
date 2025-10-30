@@ -26,6 +26,7 @@ type Individual struct {
 	age               int
 	healthStatus      HealthStatus
 	daysInfected      int
+	daysSinceRecovery int
 	vaccinationStatus bool
 	hygieneLevel      float64
 	movementPattern   *MovementPattern
@@ -49,7 +50,7 @@ const (
 type Environment struct {
 	population                 []*Individual
 	areaSize                   float64
-	socialDistancingCompliance float64
+	socialDistancingThreshold  float64
 	hygieneLevel               float64
 	mobilityRate               float64
 	vaccinationRate            float64

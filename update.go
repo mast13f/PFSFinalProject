@@ -50,10 +50,14 @@ func UpdatePopulationHealthStatus(env *Environment, rng *rand.Rand) error {
 			b = computeB(env, ind)
 		case Infected:
 			c = computeC(env, ind, infectedTotal)
-		}
-		// Pei you can start from here to add d,e
+			d = computeD(env, ind)
 		case Recovered:
-			
+			e = computeE(env, ind)
+		case Dead:
+			// no change
+		default:
+			return errors.New("unknown health status")
+		}
 		ps[i] = probs{a: a, b: b, c: c, d: d, e: e}
 	}
 
@@ -218,7 +222,7 @@ func computeB(env *Environment, ind *Individual) float64 {
 }
 //
 // C: Infected→(death/recover/remain infected) Here we only calculate "death probability c"
-// Basis: base mortality, age, overload (infectedTotal > capacity), medical care level.
+// Basis: base mortality, age, overload (infectedTotal > capacity), medical care level, vaccinationStatus
 // Interpretable approach:
 //   c = baseMort * ageMult * overloadMult * (1 - 0.6*careLevel)
 // Where ageMult: <40:0.6, 40-60:1.0, >60:1.6 (example)
@@ -255,17 +259,81 @@ func computeC(env *Environment, ind *Individual, infectedTotal int) float64 {
 	careLevel := clamp01(env.medicalCareLevel)
 	careFactor := 1.0 - 0.6*careLevel
 
-	c := base * ageMult * overloadMult * careFactor
+	// Vaccination adjustment:
+	// Use only individual vaccination status (no population-level coverage info)
+	vaxFactor := 1.0
+	if ind.vaccinated {
+		// vaccinated individuals have substantially reduced mortality risk
+		vaxFactor = 0.5
+	}
+
+	c := base * ageMult * overloadMult * careFactor * vaxFactor
 	return clamp01(c)
 }
 
 
+// D: Infected→Recovered
+// Basis: base recovery rate, age, medical care level, days infected.
+// Interpretable approach:
+//   d = baseRec * ageMult * (1 + 0.5*careLevel)
+// Where ageMult: <40:1.4, 40-60:1.0, >60:0.7 (example)
+func computeD(env *Environment, ind *Individual) float64 {
+	if ind == nil || ind.healthStatus != Infected || ind.disease == nil {
+		return 0
+	}
+	
+	baseRec := clamp01(ind.disease.recoveryRate)
+	// Age adjustment (example, can be replaced with a finer curve)
+	ageMult := 1.0
+	switch {
+	case ind.age < 40:
+		ageMult = 1.4
+	case ind.age <= 60:
+		ageMult = 1.0
+	default:
+		ageMult = 0.7
+	}
+	
+	// Medical care level adjustment (the higher, the higher the recovery rate)
+	careLevel := clamp01(env.medicalCareLevel)
+	careFactor := 1.0 + 0.5*careLevel
+	
+	// Days infected adjustment: longer infection duration increases recovery chance
+	timeFactor := 1.0
+	if ind.daysInfected > 0 {
+		timeFactor += math.Log(float64(ind.daysInfected)+1) / 10.0 // logarithmic increase
+	}
+	
+	d := baseRec * ageMult * careFactor * timeFactor
+	return clamp01(d)
+}
 
+// E: Recovered→Healthy
+// Basis: days since recovery, vaccination status (bool)
+// Immunity decays over time: modeled as increasing probability with days since recovery
+// Vaccination boosts immunity: vaccinated recovered individuals have lower chance of losing immunity
+func computeE(env *Environment, ind *Individual) float64 {
+	if ind == nil || ind.healthStatus != Recovered || ind.disease == nil {
+		return 0
+	}
+	
+	// Base immunity loss rate: starts low, increases with days since recovery
+	baseE := 0.01 // base 1% chance
+	if ind.daysSinceRecovery > 0 {
+		baseE += math.Log(float64(ind.daysSinceRecovery)+1) / 50.0 // logarithmic increase
+	}
+	
+	// Vaccination adjustment: vaccinated recovered individuals have reduced immunity loss
+	vaxFactor := 1.0
+	if ind.vaccinated {
+		vaxFactor = 0.5 // halve the chance of losing immunity
+	}
+	
+	e := baseE * vaxFactor
+	return clamp01(e)
+}	
 
-
-
-
-
+// ---------------- Movement update ----------------
 
 
 
