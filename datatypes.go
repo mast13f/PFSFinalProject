@@ -25,8 +25,9 @@ type Individual struct {
 	gender          string
 	age             int
 	healthStatus    HealthStatus
-	disease         *Disease
 	daysInfected    int
+	vaccinationStatus bool
+	hygieneLevel    float64
 	movementPattern *MovementPattern
 	position        OrderedPair
 }
@@ -44,6 +45,7 @@ type Environment struct{
 	hygieneLevel float64
 	mobilityRate float64
 	vaccinationRate float64
+	medicalCareLevel float64
 	medicalCapacity int
 }
 
