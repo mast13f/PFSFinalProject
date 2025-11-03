@@ -22,15 +22,17 @@ const (
 )
 
 type Individual struct {
-	gender            string
-	age               int
-	healthStatus      HealthStatus
-	daysInfected      int
-	daysSinceRecovery int
-	vaccinationStatus bool
-	hygieneLevel      float64
-	movementPattern   *MovementPattern
-	position          OrderedPair
+	gender                   string
+	age                      int
+	healthStatus             HealthStatus
+	disease                  *Disease
+	daysInfected             int
+	daysSinceRecovery        int
+	vaccinated               bool
+	hygieneLevel             float64
+	socialDistanceCompliance float64
+	movementPattern          *MovementPattern
+	position                 OrderedPair
 }
 
 // David u can decide how to structure this
@@ -48,14 +50,15 @@ const (
 )
 
 type Environment struct {
-	population                 []*Individual
-	areaSize                   float64
-	socialDistancingThreshold  float64
-	hygieneLevel               float64
-	mobilityRate               float64
-	vaccinationRate            float64
-	medicalCareLevel           float64
-	medicalCapacity            int
+	population               []*Individual
+	areaSize                 float64
+	socialDistanceThreshold  float64
+	hygieneLevel             float64
+	mobilityRate             float64
+	vaccinationRate          float64
+	medicalCareLevel         float64
+	medicalCapacity          int
+	socialDistanceCompliance float64
 }
 
 type OrderedPair struct {

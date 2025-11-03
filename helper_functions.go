@@ -1,7 +1,9 @@
 package main
-import(
-	"math/rand"
+
+import (
 	"math"
+	"math/rand"
+	"time"
 )
 
 // 0-1 clamp
@@ -23,9 +25,9 @@ func rngOrDefault(rng *rand.Rand) *rand.Rand {
 	return rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
-//calculate distance between two positions
+// calculate distance between two positions
 func dist(a, b OrderedPair) float64 {
 	dx := a.x - b.x
 	dy := a.y - b.y
-	return math.Sqrt(dx*dx+ dy*dy)
+	return math.Sqrt(dx*dx + dy*dy)
 }

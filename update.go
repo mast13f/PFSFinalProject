@@ -2,9 +2,9 @@ package main
 
 import (
 	"errors"
+	"math"
 	"math/rand"
 	"time"
-	"math"
 )
 
 // UpdateHealthStatus applies one step of stochastic state transition.
@@ -42,7 +42,7 @@ func UpdatePopulationHealthStatus(env *Environment, rng *rand.Rand) error {
 			ps[i] = probs{}
 			continue
 		}
-		var a, b, c float64
+		var a, b, c, d, e float64
 		switch ind.healthStatus {
 		case Healthy:
 			a = computeA(env, ind)
@@ -71,7 +71,6 @@ func UpdatePopulationHealthStatus(env *Environment, rng *rand.Rand) error {
 
 	return nil
 }
-
 
 func UpdateIndividualHealthStatus(ind *Individual, a, b, c, d, e float64, rng *rand.Rand) error {
 	if ind == nil {
@@ -118,10 +117,10 @@ func UpdateIndividualHealthStatus(ind *Individual, a, b, c, d, e float64, rng *r
 	}
 	return nil
 }
-// helper function to validate probability values and draw random float
-func validProb(p float64) bool { return p >= 0.0 && p <= 1.0 }
-func draw(rng *rand.Rand) float64 { return rng.Float64() }
 
+// helper function to validate probability values and draw random float
+func validProb(p float64) bool    { return p >= 0.0 && p <= 1.0 }
+func draw(rng *rand.Rand) float64 { return rng.Float64() }
 
 // find infected neighbors within radius r
 func infectedNeighbors(env *Environment, who *Individual, r float64) []struct {
@@ -149,27 +148,27 @@ func infectedNeighbors(env *Environment, who *Individual, r float64) []struct {
 // ---------------- A/B/C/D/E calculation ----------------
 
 // A: Healthy→Susceptible Trigger condition:
-// "As long as" the distance to any infected individual < socialDistanceThreshold 
+// "As long as" the distance to any infected individual < socialDistanceThreshold
 // and environmental hygiene < 0.5
 // Here, "as long as" is implemented as: if the condition is met, then a=1; otherwise a=0.
-// For better interpretability, social distancing compliance is also included: 
-// higher compliance increases the effective threshold, making people more dispersed 
+// For better interpretability, social distancing compliance is also included:
+// higher compliance increases the effective threshold, making people more dispersed
 // and thus reducing the probability of being affected.
 func computeA(env *Environment, ind *Individual) float64 {
 	if ind == nil || ind.healthStatus != Healthy {
 		return 0
 	}
-	// Base threshold: Prefer using the value provided by the environment; 
+	// Base threshold: Prefer using the value provided by the environment;
 	// otherwise, fall back to half of the disease transmission distance
 	R := env.socialDistanceThreshold
 	if R <= 0 && ind.disease != nil && ind.disease.transmissionDistance > 0 {
 		R = 0.5 * ind.disease.transmissionDistance
 	}
 	if R <= 0 {
-		R = 1.0 
+		R = 1.0
 	}
 	// Let high compliance effectively reduce the probability of "close contact": scale by (1 - compliance*0.6)
-	Reff := R * (1 - 0.6*clamp01(env.socialDistancingCompliance))
+	Reff := R * (1 - 0.6*clamp01(env.socialDistanceCompliance))
 
 	neighbors := infectedNeighbors(env, ind, Reff)
 	if len(neighbors) > 0 && env.hygieneLevel < 0.5 {
@@ -193,19 +192,19 @@ func computeB(env *Environment, ind *Individual) float64 {
 	}
 	baseBeta := clamp01(ind.disease.transmissionRate)
 
-	// Vaccine effect (simple linear reduction): if individual field exists, use it; 
+	// Vaccine effect (simple linear reduction): if individual field exists, use it;
 	// otherwise use environment coverage as expectation
 	vaxFactor := 1.0
 	if ind.vaccinated {
 		vaxFactor = 0.5 // Vaccinated individuals halve the risk (can be adjusted/refined)
 	} else {
 		// Population-level average protection: reduce exposure risk according to coverage rate
-		vaxFactor = 1.0 - 0.5*clamp01(env.vaccinationCoverage)
+		vaxFactor = 1.0 - 0.5*clamp01(env.vaccinationRate)
 	}
 
 	// Social hygiene/compliance further reduces effective contact
 	hygieneFactor := 1.0 - 0.4*clamp01(env.hygieneLevel)
-	complianceFactor := 1.0 - 0.4*clamp01(env.socialDistancingCompliance)
+	complianceFactor := 1.0 - 0.4*clamp01(env.socialDistanceCompliance)
 
 	neighbors := infectedNeighbors(env, ind, 3*D0) // Influence radius is 3*D0
 	fail := 1.0
@@ -216,15 +215,14 @@ func computeB(env *Environment, ind *Individual) float64 {
 		fail *= (1 - pi)
 	}
 	return clamp01(1 - fail)
-
-	c := base * ageMult * overloadMult * careFactor
-	return clamp01(c)
 }
-//
+
 // C: Infected→(death/recover/remain infected) Here we only calculate "death probability c"
 // Basis: base mortality, age, overload (infectedTotal > capacity), medical care level, vaccinationStatus
 // Interpretable approach:
-//   c = baseMort * ageMult * overloadMult * (1 - 0.6*careLevel)
+//
+//	c = baseMort * ageMult * overloadMult * (1 - 0.6*careLevel)
+//
 // Where ageMult: <40:0.6, 40-60:1.0, >60:1.6 (example)
 // overloadMult: not overloaded=1, overloaded is linearly amplified by ratio (1 + overloadRatio)
 func computeC(env *Environment, ind *Individual, infectedTotal int) float64 {
@@ -271,17 +269,18 @@ func computeC(env *Environment, ind *Individual, infectedTotal int) float64 {
 	return clamp01(c)
 }
 
-
 // D: Infected→Recovered
 // Basis: base recovery rate, age, medical care level, days infected.
 // Interpretable approach:
-//   d = baseRec * ageMult * (1 + 0.5*careLevel)
+//
+//	d = baseRec * ageMult * (1 + 0.5*careLevel)
+//
 // Where ageMult: <40:1.4, 40-60:1.0, >60:0.7 (example)
 func computeD(env *Environment, ind *Individual) float64 {
 	if ind == nil || ind.healthStatus != Infected || ind.disease == nil {
 		return 0
 	}
-	
+
 	baseRec := clamp01(ind.disease.recoveryRate)
 	// Age adjustment (example, can be replaced with a finer curve)
 	ageMult := 1.0
@@ -293,17 +292,17 @@ func computeD(env *Environment, ind *Individual) float64 {
 	default:
 		ageMult = 0.7
 	}
-	
+
 	// Medical care level adjustment (the higher, the higher the recovery rate)
 	careLevel := clamp01(env.medicalCareLevel)
 	careFactor := 1.0 + 0.5*careLevel
-	
+
 	// Days infected adjustment: longer infection duration increases recovery chance
 	timeFactor := 1.0
 	if ind.daysInfected > 0 {
 		timeFactor += math.Log(float64(ind.daysInfected)+1) / 10.0 // logarithmic increase
 	}
-	
+
 	d := baseRec * ageMult * careFactor * timeFactor
 	return clamp01(d)
 }
@@ -316,76 +315,71 @@ func computeE(env *Environment, ind *Individual) float64 {
 	if ind == nil || ind.healthStatus != Recovered || ind.disease == nil {
 		return 0
 	}
-	
+
 	// Base immunity loss rate: starts low, increases with days since recovery
 	baseE := 0.01 // base 1% chance
 	if ind.daysSinceRecovery > 0 {
 		baseE += math.Log(float64(ind.daysSinceRecovery)+1) / 50.0 // logarithmic increase
 	}
-	
+
 	// Vaccination adjustment: vaccinated recovered individuals have reduced immunity loss
 	vaxFactor := 1.0
 	if ind.vaccinated {
 		vaxFactor = 0.5 // halve the chance of losing immunity
 	}
-	
+
 	e := baseE * vaxFactor
 	return clamp01(e)
-}	
+}
 
 // ---------------- Movement update ----------------
-
-
-
 
 // updateMove updates the individual's position based on their movement pattern.
 // It randomly selects the direction to go, and randomly selects the length of movement
 // Then we perform update on individual's position
 func (ind *Individual) updateMove(env *Environment) {
-    if ind.movementPattern == nil {
-        return
-    }
+	if ind.movementPattern == nil {
+		return
+	}
 
-    // Movement radius depends on environment area size
-    moveRadius := ind.movementPattern.moveRadius
-    if moveRadius <= 0 {
-        // In case movementPattern hasn’t been initialized properly
-        ind.movementPattern = NewMovementPattern(ind.movementPattern.moveType, env)
-        moveRadius = ind.movementPattern.moveRadius
-    }
+	// Movement radius depends on environment area size
+	moveRadius := ind.movementPattern.moveRadius
+	if moveRadius <= 0 {
+		// In case movementPattern hasn’t been initialized properly
+		ind.movementPattern = NewMovementPattern(ind.movementPattern.moveType, env)
+		moveRadius = ind.movementPattern.moveRadius
+	}
 
-    // Random direction (0 to 2π)
+	// Random direction (0 to 2π)
 	//random movement length
 	dist := math.Sqrt(rand.Float64()) * moveRadius
-    angle := rand.Float64() * 2 * math.Pi
+	angle := rand.Float64() * 2 * math.Pi
 
-    dx := dist * math.Cos(angle)
-    dy := dist * math.Sin(angle)
+	dx := dist * math.Cos(angle)
+	dy := dist * math.Sin(angle)
 
-    newX := ind.position.x + dx
-    newY := ind.position.y + dy
+	newX := ind.position.x + dx
+	newY := ind.position.y + dy
 
-    // Keep within environment boundaries (wrap around)
-    if newX < 0 {
-        newX = env.areaSize + newX
-    } else if newX > env.areaSize {
-        newX = newX - env.areaSize
-    }
+	// Keep within environment boundaries (wrap around)
+	if newX < 0 {
+		newX = env.areaSize + newX
+	} else if newX > env.areaSize {
+		newX = newX - env.areaSize
+	}
 
-    if newY < 0 {
-        newY = env.areaSize + newY
-    } else if newY > env.areaSize {
-        newY = newY - env.areaSize
-    }
+	if newY < 0 {
+		newY = env.areaSize + newY
+	} else if newY > env.areaSize {
+		newY = newY - env.areaSize
+	}
 
-    // Update position
-    ind.position = OrderedPair{x: newX, y: newY}
+	// Update position
+	ind.position = OrderedPair{x: newX, y: newY}
 }
 
-
-
 // NewMovementPattern creates a MovementPattern based on areaSize
-// How far a person can go depends on the travel type. 
+// How far a person can go depends on the travel type.
 // If a person is walking, then it will move the slowest. 0.1% of the map in each generation
 // If a person is on the train, it can move 1/10th of the map
 // If a person is taking a flight, then it can move anywhere
