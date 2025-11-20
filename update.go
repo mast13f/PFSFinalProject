@@ -158,8 +158,8 @@ func computeA(env *Environment, ind *Individual) float64 {
 	if ind == nil || ind.healthStatus != Healthy {
 		return 0
 	}
-	// Base threshold: Prefer using the value provided by the environment;
-	// otherwise, fall back to half of the disease transmission distance
+
+	// Base threshold: policy-level social distancing requirement
 	R := env.socialDistanceThreshold
 	if R <= 0 && ind.disease != nil && ind.disease.transmissionDistance > 0 {
 		R = 0.5 * ind.disease.transmissionDistance
@@ -167,15 +167,23 @@ func computeA(env *Environment, ind *Individual) float64 {
 	if R <= 0 {
 		R = 1.0
 	}
-	// Let high compliance effectively reduce the probability of "close contact": scale by (1 - compliance*0.6)
-	Reff := R * (1 - 0.6*clamp01(env.socialDistanceCompliance))
+
+	// Individual-level compliance reduces effective close-contact range
+	// High compliance → keeps more distance → smaller effective R
+	compliance := clamp01(ind.socialDistanceCompliance)
+	Reff := R * (1 - 0.6*compliance)
 
 	neighbors := infectedNeighbors(env, ind, Reff)
+
+	// Exposure occurs only if:
+	//   - at least one infected neighbor is within Reff
+	//   - environmental hygiene is low
 	if len(neighbors) > 0 && env.hygieneLevel < 0.5 {
 		return 1.0
 	}
 	return 0.0
 }
+
 
 // B: Susceptible→Infected
 // Basis: transmissionRate, distance to each infected individual, vaccination.
@@ -196,26 +204,32 @@ func computeB(env *Environment, ind *Individual) float64 {
 	// otherwise use environment coverage as expectation
 	vaxFactor := 1.0
 	if ind.vaccinated {
-		vaxFactor = 0.5 // Vaccinated individuals halve the risk (can be adjusted/refined)
+		// Vaccinated individuals halve the risk (can be adjusted/refined)
+		vaxFactor = 0.5
 	} else {
 		// Population-level average protection: reduce exposure risk according to coverage rate
 		vaxFactor = 1.0 - 0.5*clamp01(env.vaccinationRate)
 	}
 
-	// Social hygiene/compliance further reduces effective contact
+	// Social hygiene reduces effective contact
 	hygieneFactor := 1.0 - 0.4*clamp01(env.hygieneLevel)
-	complianceFactor := 1.0 - 0.4*clamp01(env.socialDistanceCompliance)
+
+	// Social distancing compliance reduces effective contact rate
+	compliance := clamp01(ind.socialDistanceCompliance)
+	complianceFactor := 1.0 - 0.4*compliance
 
 	neighbors := infectedNeighbors(env, ind, 3*D0) // Influence radius is 3*D0
 	fail := 1.0
 	for _, nb := range neighbors {
-		decay := math.Exp(-nb.d / D0) // The closer the distance, the closer the value is to 1
+		// The closer the distance, the closer the value is to 1
+		decay := math.Exp(-nb.d / D0)
 		pi := baseBeta * decay * vaxFactor * hygieneFactor * complianceFactor
 		pi = clamp01(pi)
 		fail *= (1 - pi)
 	}
 	return clamp01(1 - fail)
 }
+
 
 // C: Infected→(death/recover/remain infected) Here we only calculate "death probability c"
 // Basis: base mortality, age, overload (infectedTotal > capacity), medical care level, vaccinationStatus

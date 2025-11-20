@@ -28,11 +28,13 @@ type Individual struct {
 	disease                  *Disease
 	daysInfected             int
 	daysSinceRecovery        int
+	daysSinceVacination	     int
 	vaccinated               bool
 	hygieneLevel             float64
 	socialDistanceCompliance float64
 	movementPattern          *MovementPattern
 	position                 OrderedPair
+	inHospital               bool
 }
 
 // David u can decide how to structure this
@@ -58,7 +60,6 @@ type Environment struct {
 	vaccinationRate          float64
 	medicalCareLevel         float64
 	medicalCapacity          int
-	socialDistanceCompliance float64
 }
 
 type OrderedPair struct {
