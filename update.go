@@ -389,7 +389,7 @@ func (ind *Individual) updateMove(env *Environment) {
 	// Update position
 	ind.position = OrderedPair{x: newX, y: newY}
 
-	ind.updateMovementPattern(env)
+	ind.UpdateMovementPattern(env)
 }
 
 // NewMovementPattern creates a MovementPattern based on areaSize
@@ -418,7 +418,7 @@ func NewMovementPattern(mt moveType, env *Environment) *MovementPattern {
 	}
 }
 
-func (ind *Individual) updateMovementPattern(env *Environment) {
+func (ind *Individual) UpdateMovementPattern(env *Environment) {
 	val := rand.Float64()
 
 	if val <= 0.01 {
@@ -435,7 +435,7 @@ func (ind *Individual) updateMovementPattern(env *Environment) {
 	} else {
 		ind.movementPattern = &MovementPattern{
 			moveType:   Walk,
-			moveRadius: env.areaSize * 0.01,
+			moveRadius: env.areaSize * 0.001,
 		}
 	}
 }
