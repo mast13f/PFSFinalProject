@@ -184,7 +184,6 @@ func computeA(env *Environment, ind *Individual) float64 {
 	return 0.0
 }
 
-
 // B: Susceptible→Infected
 // Basis: transmissionRate, distance to each infected individual, vaccination.
 // Multiple exposure sources use independent failure stacking: P(infection) = 1 - Π(1 - p_i)
@@ -229,7 +228,6 @@ func computeB(env *Environment, ind *Individual) float64 {
 	}
 	return clamp01(1 - fail)
 }
-
 
 // C: Infected→(death/recover/remain infected) Here we only calculate "death probability c"
 // Basis: base mortality, age, overload (infectedTotal > capacity), medical care level, vaccinationStatus
@@ -352,7 +350,7 @@ func computeE(env *Environment, ind *Individual) float64 {
 // It randomly selects the direction to go, and randomly selects the length of movement
 // Then we perform update on individual's position
 func (ind *Individual) updateMove(env *Environment) {
-	if ind.movementPattern == nil {
+	if ind.movementPattern == nil || ind.healthStatus == Infected {
 		return
 	}
 
@@ -390,6 +388,8 @@ func (ind *Individual) updateMove(env *Environment) {
 
 	// Update position
 	ind.position = OrderedPair{x: newX, y: newY}
+
+	ind.updateMovementPattern(env)
 }
 
 // NewMovementPattern creates a MovementPattern based on areaSize
@@ -415,5 +415,27 @@ func NewMovementPattern(mt moveType, env *Environment) *MovementPattern {
 	return &MovementPattern{
 		moveType:   mt,
 		moveRadius: radius,
+	}
+}
+
+func (ind *Individual) updateMovementPattern(env *Environment) {
+	val := rand.Float64()
+
+	if val <= 0.01 {
+		ind.movementPattern = &MovementPattern{
+			moveType:   Flight,
+			moveRadius: env.areaSize,
+		}
+	} else if val <= 0.05 {
+		ind.movementPattern = &MovementPattern{
+			moveType:   Train,
+			moveRadius: env.areaSize * 0.1,
+		}
+
+	} else {
+		ind.movementPattern = &MovementPattern{
+			moveType:   Walk,
+			moveRadius: env.areaSize * 0.01,
+		}
 	}
 }
