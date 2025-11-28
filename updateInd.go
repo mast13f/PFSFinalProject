@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-
 // UpdateHealthStatus applies one step of stochastic state transition.
 // Rules:
 // - Healthy -> Susceptible with prob a; else stays Healthy
@@ -20,10 +19,10 @@ import (
 
 // UpdatePopulationHealthStatus updates the health status of the whole population for one time step.
 // Behavior:
-//  - RNG is defaulted if nil.
-//  - Vaccination rollout (environment-level) is performed once per generation.
-//  - Probabilities a,b,c,d,e are computed for each individual using computeA..computeE.
-//  - Each individual's health status is updated by calling UpdateIndividualHealthStatus(env, ind, ...).
+//   - RNG is defaulted if nil.
+//   - Vaccination rollout (environment-level) is performed once per generation.
+//   - Probabilities a,b,c,d,e are computed for each individual using computeA..computeE.
+//   - Each individual's health status is updated by calling UpdateIndividualHealthStatus(env, ind, ...).
 func UpdatePopulationHealthStatus(env *Environment, rng *rand.Rand) error {
 	if env == nil || len(env.population) == 0 {
 		return errors.New("empty environment or population")
@@ -116,7 +115,7 @@ func UpdateIndividualHealthStatus(env *Environment, ind *Individual, a, b, c, d,
 	// Update personal hygiene based on internal rules / stochasticity.
 	// This will change ind.hygieneLevel which may affect future computeX values.
 	// Assumes updateHygieneLevel(ind *Individual) exists (or variant with env if you used that).
-	updateHygieneLevel(env,ind,rng)
+	updateHygieneLevel(env, ind, rng)
 
 	// Update social-distance compliance and adjust movementPattern.
 	// If env is nil, skip this step (requires environment context).
@@ -140,13 +139,13 @@ func UpdateIndividualHealthStatus(env *Environment, ind *Individual, a, b, c, d,
 
 	switch prevStatus {
 	case Healthy:
-		if draw(rng) < a {
+		if drawFloat(rng) < a {
 			ind.healthStatus = Susceptible
 			// reset recovery counter (not relevant now)
 			ind.daysSinceRecovery = 0
 		}
 	case Susceptible:
-		if draw(rng) < b {
+		if drawFloat(rng) < b {
 			ind.healthStatus = Infected
 			ind.daysInfected = 0 // reset counter on becoming infected
 			// when infected, daysSinceRecovery should reset
@@ -156,7 +155,7 @@ func UpdateIndividualHealthStatus(env *Environment, ind *Individual, a, b, c, d,
 			// if recovered before and moved to Susceptible, keep daysSinceRecovery as-is
 		}
 	case Infected:
-		r := draw(rng)
+		r := drawFloat(rng)
 		if r < c {
 			ind.healthStatus = Dead
 			// death: freeze counters
@@ -170,7 +169,7 @@ func UpdateIndividualHealthStatus(env *Environment, ind *Individual, a, b, c, d,
 			ind.daysInfected++
 		}
 	case Recovered:
-		if draw(rng) < e {
+		if drawFloat(rng) < e {
 			ind.healthStatus = Healthy
 			ind.daysSinceRecovery = 0
 		} else {
@@ -210,10 +209,9 @@ func UpdateIndividualHealthStatus(env *Environment, ind *Individual, a, b, c, d,
 	return nil
 }
 
-
 // helper function to validate probability values and draw random float
-func validProb(p float64) bool    { return p >= 0.0 && p <= 1.0 }
-func draw(rng *rand.Rand) float64 { return rng.Float64() }
+func validProb(p float64) bool         { return p >= 0.0 && p <= 1.0 }
+func drawFloat(rng *rand.Rand) float64 { return rng.Float64() }
 
 // find infected neighbors within radius r
 func infectedNeighbors(env *Environment, who *Individual, r float64) []struct {
@@ -310,8 +308,6 @@ func computeA(env *Environment, ind *Individual) float64 {
 	return clamp01(effectiveSusceptibility)
 }
 
-
-
 // B: Susceptible→Infected
 // Basis: transmissionRate, distance to each infected individual, vaccination.
 // Multiple exposure sources use independent failure stacking: P(infection) = 1 - Π(1 - p_i)
@@ -356,7 +352,6 @@ func computeB(env *Environment, ind *Individual) float64 {
 	}
 	return clamp01(1 - fail)
 }
-
 
 // C: Infected→(death/recover/remain infected) Here we only calculate "death probability c"
 // Basis: base mortality, age, overload (infectedTotal > capacity), medical care level, vaccinationStatus
@@ -472,6 +467,7 @@ func computeE(env *Environment, ind *Individual) float64 {
 	e := baseE * vaxFactor
 	return clamp01(e)
 }
+
 // neighborsWithin: return neighbors (including non-infected) within radius r
 func neighborsWithin(env *Environment, who *Individual, r float64) []*Individual {
 	out := make([]*Individual, 0)
@@ -499,15 +495,14 @@ func neighborsWithin(env *Environment, who *Individual, r float64) []*Individual
 // NOTE: env and rng may be nil; if rng is nil a default one will be used.
 func updateHygieneLevel(env *Environment, ind *Individual, rng *rand.Rand) error {
 
-
 	// parameters (tunable)
-	fatigueDecay := 0.01      // normal hygiene decay per timestep
+	fatigueDecay := 0.01         // normal hygiene decay per timestep
 	socialInfluenceRadius := 2.0 // neighbor search radius (units consistent with position)
-	influenceWeight := 0.35   // average neighbor hygiene weight
-	infectionBoost := 0.20    // if infected, hygiene improvement boost
-	hospitalBoost := 0.30     // if in hospital, stronger hygiene boost
-	vaxComplacency := 0.12    // vaccination complacency max reduction
-	randomNoise := 0.03       // random noise amplitude
+	influenceWeight := 0.35      // average neighbor hygiene weight
+	infectionBoost := 0.20       // if infected, hygiene improvement boost
+	hospitalBoost := 0.30        // if in hospital, stronger hygiene boost
+	vaxComplacency := 0.12       // vaccination complacency max reduction
+	randomNoise := 0.03          // random noise amplitude
 
 	// clamp current hygiene into [0,1]
 	current := clamp01(ind.hygieneLevel)
@@ -578,10 +573,10 @@ func updateHygieneLevel(env *Environment, ind *Individual, rng *rand.Rand) error
 func updateSocialDistanceCompliance(env *Environment, ind *Individual, rng *rand.Rand) (float64, error) {
 
 	// parameters (tunable)
-	normRadius := 3.0           // neighborhood radius to estimate social norms
-	normWeight := 0.4           // neighbors' compliance weight
-	policyWeight := 0.4         // environment policy weight
-	vaxComplacencyMax := 0.25   // maximum compliance reduction due to vaccination
+	normRadius := 3.0         // neighborhood radius to estimate social norms
+	normWeight := 0.4         // neighbors' compliance weight
+	policyWeight := 0.4       // environment policy weight
+	vaxComplacencyMax := 0.25 // maximum compliance reduction due to vaccination
 	infectionComplianceBoost := 0.35
 	hospitalComplianceBoost := 0.6
 	randomJitter := 0.04
@@ -701,19 +696,18 @@ func baselineMoveRadius(mp *MovementPattern) float64 {
 	}
 }
 
-
 // UpdateVaccination attempts to vaccinate unvaccinated individuals in the environment.
 // Behavior:
-// - env.vaccinationRate is treated as the target fraction of population to be vaccinated.
-// - We compute desiredTotal = round(env.vaccinationRate * populationSize).
-// - available = desiredTotal - currentVaccinated.
-// - Vaccinations per generation are capped by maxDaily (default: 2% of population, at least 1).
-// - Each unvaccinated individual has an acceptance probability determined by personal factors:
+//   - env.vaccinationRate is treated as the target fraction of population to be vaccinated.
+//   - We compute desiredTotal = round(env.vaccinationRate * populationSize).
+//   - available = desiredTotal - currentVaccinated.
+//   - Vaccinations per generation are capped by maxDaily (default: 2% of population, at least 1).
+//   - Each unvaccinated individual has an acceptance probability determined by personal factors:
 //     baseAcceptance +/- modifiers (age, compliance, hygiene, inHospital).
-// - A person can only be vaccinated once; we set vaccinated=true and daysSinceVacination=0.
+//   - A person can only be vaccinated once; we set vaccinated=true and daysSinceVacination=0.
+//
 // Returns the number of newly vaccinated individuals in this update.
 func UpdateVaccination(env *Environment, rng *rand.Rand) (int, error) {
-
 
 	n := len(env.population)
 
