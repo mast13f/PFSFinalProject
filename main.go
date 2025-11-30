@@ -205,6 +205,7 @@ func main() {
 		fmt.Printf("Loaded configuration from: %s\n", *configFile)
 	} else {
 		config = getDefaultConfig()
+		// If medicalCapacity is not specified, set it to 10% of population size.
 		config.medicalCapacity = int(0.1 * float64(config.popSize))
 	}
 
@@ -234,7 +235,9 @@ func main() {
 		disease,
 	)
 
-	var frames []image.Image
+	// Two types of frames: spatial distribution and pie chart
+	var framesSpatial []image.Image
+	var framesPie []image.Image
 
 	fmt.Printf("Day, Healthy, Susceptible, Infected, Recovered, Dead, InfectedFrac, Vaccinated, EnvHygiene, EnvVaxRate, SDThreshold, PolicyTightened\n")
 
@@ -243,7 +246,10 @@ func main() {
 		infectOneRandom(env, disease)
 	}
 
+	// Day 0 statistics + Day 0 frames
 	printStats(0, env, false)
+	framesSpatial = append(framesSpatial, env.DrawToCanvas(config.canvasWidth, config.pointRadius))
+	framesPie = append(framesPie, DrawEnvironmentPie(env, config.canvasWidth))
 
 	for day := 1; day <= config.numDays; day++ {
 		if err := UpdatePopulationHealthStatus(env, globalRng); err != nil {
@@ -266,14 +272,26 @@ func main() {
 
 		_ = infFrac
 		printStats(day, env, tightened)
+
+		// Add both spatial and pie frames every frameFrequency steps
 		if day%config.frameFrequency == 0 {
-			frames = append(frames, env.DrawToCanvas(config.canvasWidth, config.pointRadius))
+			framesSpatial = append(framesSpatial, env.DrawToCanvas(config.canvasWidth, config.pointRadius))
+			framesPie = append(framesPie, DrawEnvironmentPie(env, config.canvasWidth))
 		}
 	}
 
-	if err := SaveEnvironmentGIF(config.gifFilename, frames, config.gifDelay); err != nil {
-		fmt.Println("failed to save gif:", err)
+	// 1) Save spatial distribution GIF
+	if err := SaveEnvironmentGIF(config.gifFilename, framesSpatial, config.gifDelay); err != nil {
+		fmt.Println("failed to save spatial gif:", err)
 	} else {
-		fmt.Println("GIF saved to:", config.gifFilename)
+		fmt.Println("Spatial GIF saved to:", config.gifFilename)
+	}
+
+	// 2) Save pie chart GIF (prefix the filename)
+	pieName := "pie_" + config.gifFilename
+	if err := SaveEnvironmentGIF(pieName, framesPie, config.gifDelay); err != nil {
+		fmt.Println("failed to save pie gif:", err)
+	} else {
+		fmt.Println("Pie GIF saved to:", pieName)
 	}
 }
