@@ -224,12 +224,14 @@ func main() {
 	env := initializeEnvironment(
 		config.popSize,
 		config.areaSize,
+		config.initialInfected,
 		config.socialDistanceThreshold,
 		config.hygieneLevel,
 		config.mobilityRate,
 		config.vaccinationRate,
 		config.medicalCareLevel,
 		config.medicalCapacity,
+		disease,
 	)
 
 	var frames []image.Image

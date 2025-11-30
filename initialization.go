@@ -2,6 +2,9 @@ package main
 
 import "math/rand"
 
+// initialize disease function
+// takes input of Disease field and returns a pointer
+// Once disease is initialized, it cannot be changed
 func initializeDisease(name string, transmissionRate, transmissionDistance, recoveryRate, mortalityRate float64, latentPeriod, infectiousPeriod, immunityDuration int) *Disease {
 	return &Disease{
 		name:                 name,
@@ -15,15 +18,21 @@ func initializeDisease(name string, transmissionRate, transmissionDistance, reco
 	}
 }
 
+// initialize enviornment function
+// takes input of enviornment field and returns a pointer
+// This will be used throughout the model, contains information of every individual and enviornment
+// The enviornment is like the 'world' for the model
 func initializeEnvironment(
 	popSize int,
 	areaSize float64,
+	initialInfected int,
 	socialDistanceThreshold float64,
 	hygieneLevel float64,
 	mobilityRate float64,
 	vaccinationRate float64,
 	medicalCareLevel float64,
 	medicalCapacity int,
+	disease *Disease,
 ) *Environment {
 
 	env := &Environment{
@@ -43,9 +52,13 @@ func initializeEnvironment(
 		env.population[i] = person
 	}
 
+	applyInitialInfections(env, initialInfected, disease)
+
 	return env
 }
 
+// initialize individual function
+// randomly initialize individual, all its fields are randomized
 func initializeIndividual(env *Environment) *Individual {
 	// Random position in the map
 	pos := OrderedPair{
@@ -60,10 +73,8 @@ func initializeIndividual(env *Environment) *Individual {
 	hygiene := rand.Float64()
 	socialDistance := rand.Float64()
 
-	//TODO: HOw do we want to initialize healthStatus?
-	//If someone starts with suscepitable or infected, how should we initialize?
-	// Changing those will need to return an element than someone who's healthy
-	// Disease cannot be nil, inHospital maybe needs to be true?
+	//Everyone starts healthy
+	//Apply initial infection later
 	health := Healthy
 
 	// Random movement type at initialization
@@ -96,10 +107,32 @@ func initializeIndividual(env *Environment) *Individual {
 	}
 }
 
-// A simple helper for gender assignment (expand later if needed)
+// A simple helper for gender assignment
 func randomGender() string {
 	if rand.Intn(2) == 0 {
 		return "Male"
 	}
 	return "Female"
+}
+
+// apply initial infections will infected individual at random
+// number of total infected will be initialInfected(int)
+// if initialInfected>populationSize, then everyone is infected
+func applyInitialInfections(env *Environment, initialInfected int, disease *Disease) {
+	popSize := len(env.population)
+
+	if initialInfected >= popSize {
+		initialInfected = popSize
+	}
+
+	// Create shuffled list of indexes to infect at random
+	indexes := rand.Perm(popSize)
+
+	for i := 0; i < initialInfected; i++ {
+		person := env.population[indexes[i]]
+		person.healthStatus = Infected
+		person.disease = disease
+		person.daysInfected = 0
+		person.inHospital = true
+	}
 }

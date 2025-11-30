@@ -7,7 +7,6 @@ import (
 	//"time"
 )
 
-
 // ---------------- Movement update ----------------
 
 // updateMove updates the individual's position based on their movement pattern.
@@ -82,6 +81,9 @@ func NewMovementPattern(mt moveType, env *Environment) *MovementPattern {
 	}
 }
 
+// updateMovementPattern will assign a movement pattern to an individual
+// After the individual moves, decide how it moves for next move
+// 1% chance on flight, 4% chance on train, 95% walk
 func (ind *Individual) UpdateMovementPattern(env *Environment) {
 	val := rand.Float64()
 
