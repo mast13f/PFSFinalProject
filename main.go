@@ -1,58 +1,235 @@
 package main
 
 import (
+	"bufio"
+	"flag"
 	"fmt"
 	"image"
 	"math/rand"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
+// Config holds all simulation parameters
+type Config struct {
+	// Disease parameters
+	diseaseName          string
+	transmissionRate     float64
+	transmissionDistance float64
+	recoveryRate         float64
+	mortalityRate        float64
+	latentPeriod         int
+	infectiousPeriod     int
+	immunityDuration     int
+
+	// Population parameters
+	popSize         int
+	initialInfected int
+
+	// Environment parameters
+	areaSize                float64
+	socialDistanceThreshold float64
+	hygieneLevel            float64
+	mobilityRate            float64
+	vaccinationRate         float64
+	medicalCareLevel        float64
+	medicalCapacity         int // if 0, will be calculated as 10% of popSize
+
+	// Simulation parameters
+	numDays int
+
+	// Visualization parameters
+	canvasWidth    int
+	pointRadius    float64
+	frameFrequency int
+	gifDelay       int
+	gifFilename    string
+}
+
+func getDefaultConfig() *Config {
+	return &Config{
+		// Disease defaults
+		diseaseName:          "DemoDisease",
+		transmissionRate:     0.8,
+		transmissionDistance: 2.0,
+		recoveryRate:         0.05,
+		mortalityRate:        0.01,
+		latentPeriod:         3,
+		infectiousPeriod:     10,
+		immunityDuration:     90,
+
+		// Population defaults
+		popSize:         1000,
+		initialInfected: 10,
+
+		// Environment defaults
+		areaSize:                100.0,
+		socialDistanceThreshold: 2.0,
+		hygieneLevel:            0.1,
+		mobilityRate:            1.0,
+		vaccinationRate:         0.20,
+		medicalCareLevel:        0.7,
+		medicalCapacity:         0, // will be calculated
+
+		// Simulation defaults
+		numDays: 200,
+
+		// Visualization defaults
+		canvasWidth:    800,
+		pointRadius:    3.0,
+		frameFrequency: 2,
+		gifDelay:       5,
+		gifFilename:    "env_sim.gif",
+	}
+}
+
+func loadConfigFromFile(filename string) (*Config, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	config := getDefaultConfig()
+
+	scanner := bufio.NewScanner(file)
+	lineNum := 0
+	for scanner.Scan() {
+		lineNum++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			fmt.Printf("Warning: skipping invalid line %d: %s\n", lineNum, line)
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Parse based on key
+		switch key {
+		// Disease parameters
+		case "diseaseName":
+			config.diseaseName = value
+		case "transmissionRate":
+			config.transmissionRate, _ = strconv.ParseFloat(value, 64)
+		case "transmissionDistance":
+			config.transmissionDistance, _ = strconv.ParseFloat(value, 64)
+		case "recoveryRate":
+			config.recoveryRate, _ = strconv.ParseFloat(value, 64)
+		case "mortalityRate":
+			config.mortalityRate, _ = strconv.ParseFloat(value, 64)
+		case "latentPeriod":
+			config.latentPeriod, _ = strconv.Atoi(value)
+		case "infectiousPeriod":
+			config.infectiousPeriod, _ = strconv.Atoi(value)
+		case "immunityDuration":
+			config.immunityDuration, _ = strconv.Atoi(value)
+
+		// Population parameters
+		case "popSize":
+			config.popSize, _ = strconv.Atoi(value)
+		case "initialInfected":
+			config.initialInfected, _ = strconv.Atoi(value)
+
+		// Environment parameters
+		case "areaSize":
+			config.areaSize, _ = strconv.ParseFloat(value, 64)
+		case "socialDistanceThreshold":
+			config.socialDistanceThreshold, _ = strconv.ParseFloat(value, 64)
+		case "hygieneLevel":
+			config.hygieneLevel, _ = strconv.ParseFloat(value, 64)
+		case "mobilityRate":
+			config.mobilityRate, _ = strconv.ParseFloat(value, 64)
+		case "vaccinationRate":
+			config.vaccinationRate, _ = strconv.ParseFloat(value, 64)
+		case "medicalCareLevel":
+			config.medicalCareLevel, _ = strconv.ParseFloat(value, 64)
+		case "medicalCapacity":
+			config.medicalCapacity, _ = strconv.Atoi(value)
+
+		// Simulation parameters
+		case "numDays":
+			config.numDays, _ = strconv.Atoi(value)
+
+		// Visualization parameters
+		case "canvasWidth":
+			config.canvasWidth, _ = strconv.Atoi(value)
+		case "pointRadius":
+			config.pointRadius, _ = strconv.ParseFloat(value, 64)
+		case "frameFrequency":
+			config.frameFrequency, _ = strconv.Atoi(value)
+		case "gifDelay":
+			config.gifDelay, _ = strconv.Atoi(value)
+		case "gifFilename":
+			config.gifFilename = value
+
+		default:
+			fmt.Printf("Warning: unknown parameter '%s' on line %d\n", key, lineNum)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	// Calculate medical capacity if not set
+	if config.medicalCapacity == 0 {
+		config.medicalCapacity = int(0.1 * float64(config.popSize))
+	}
+
+	return config, nil
+}
+
 func main() {
+	configFile := flag.String("config", "", "Path to configuration file")
+	flag.Parse()
+
+	var config *Config
+
+	if *configFile != "" {
+		var err error
+		config, err = loadConfigFromFile(*configFile)
+		if err != nil {
+			fmt.Printf("Error loading config file: %v\n", err)
+			return
+		}
+		fmt.Printf("Loaded configuration from: %s\n", *configFile)
+	} else {
+		config = getDefaultConfig()
+		config.medicalCapacity = int(0.1 * float64(config.popSize))
+	}
 
 	disease := initializeDisease(
-		"DemoDisease",
-		0.8,  // transmissionRate
-		2.0,  // transmissionDistance
-		0.05, // recoveryRate
-		0.01, // mortalityRate
-		3,    // latentPeriod (unused yet, but kept for completeness)
-		10,   // infectiousPeriod
-		90,   // immunityDuration (days)
+		config.diseaseName,
+		config.transmissionRate,
+		config.transmissionDistance,
+		config.recoveryRate,
+		config.mortalityRate,
+		config.latentPeriod,
+		config.infectiousPeriod,
+		config.immunityDuration,
 	)
 
 	globalRng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	const (
-		popSize            = 1000
-		areaSize           = 100.0
-		numDays            = 200
-		initialInfected    = 10
-		initialVaccRate    = 0.20 //
-		initialHygiene     = 0.1
-		initialSDThreshold = 2.0 //
-		mobilityRate       = 1.0 //
-		medicalCareLevel   = 0.7 //
-	)
-
-	medicalCapacity := int(0.1 * float64(popSize))
-
 	env := initializeEnvironment(
-		popSize,
-		areaSize,
-		initialSDThreshold,
-		initialHygiene,
-		mobilityRate,
-		initialVaccRate,
-		medicalCareLevel,
-		medicalCapacity,
-	)
-
-	const (
-		canvasWidth    = 800 // 800x800
-		pointRadius    = 3.0 //
-		frameFrequency = 2   //
-		gifDelay       = 5   // GIF framedelay
-		gifFilename    = "env_sim.gif"
+		config.popSize,
+		config.areaSize,
+		config.socialDistanceThreshold,
+		config.hygieneLevel,
+		config.mobilityRate,
+		config.vaccinationRate,
+		config.medicalCareLevel,
+		config.medicalCapacity,
 	)
 
 	var frames []image.Image
@@ -60,13 +237,13 @@ func main() {
 	fmt.Printf("Day, Healthy, Susceptible, Infected, Recovered, Dead, InfectedFrac, Vaccinated, EnvHygiene, EnvVaxRate, SDThreshold, PolicyTightened\n")
 
 	attachDiseaseToAll(env, disease)
-	for i := 0; i < initialInfected; i++ {
+	for i := 0; i < config.initialInfected; i++ {
 		infectOneRandom(env, disease)
 	}
 
 	printStats(0, env, false)
 
-	for day := 1; day <= numDays; day++ {
+	for day := 1; day <= config.numDays; day++ {
 		if err := UpdatePopulationHealthStatus(env, globalRng); err != nil {
 			fmt.Printf("error in UpdatePopulationHealthStatus on day %d: %v\n", day, err)
 			return
@@ -87,14 +264,14 @@ func main() {
 
 		_ = infFrac
 		printStats(day, env, tightened)
-		if day%frameFrequency == 0 {
-			frames = append(frames, env.DrawToCanvas(canvasWidth, pointRadius))
+		if day%config.frameFrequency == 0 {
+			frames = append(frames, env.DrawToCanvas(config.canvasWidth, config.pointRadius))
 		}
 	}
-	if err := SaveEnvironmentGIF(gifFilename, frames, gifDelay); err != nil {
+
+	if err := SaveEnvironmentGIF(config.gifFilename, frames, config.gifDelay); err != nil {
 		fmt.Println("failed to save gif:", err)
 	} else {
-		fmt.Println("GIF saved to:", gifFilename)
+		fmt.Println("GIF saved to:", config.gifFilename)
 	}
-
 }
