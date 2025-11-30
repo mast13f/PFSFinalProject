@@ -187,7 +187,7 @@ func updateEnvHygieneLevel(env *Environment, popHygieneMean float64, infectedFra
 
 	// campaign base grows with infection prevalence
 	campaignBase := 0.0
-	if infectedFraction > 0.02 {
+	if infectedFraction > 0.4 {
 		campaignBase = clamp01(infectedFraction * 1.5)
 	}
 

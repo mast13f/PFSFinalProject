@@ -1,9 +1,9 @@
 # Disease Configuration
 diseaseName = COVID-19
-transmissionRate = 0.99
+transmissionRate = 0.90
 transmissionDistance = 10
-recoveryRate = 0.00001
-mortalityRate = 0.005
+recoveryRate = 0.1
+mortalityRate = 0.01
 latentPeriod = 10
 infectiousPeriod = 30
 immunityDuration = 60
@@ -22,7 +22,7 @@ medicalCareLevel = 0.10
 medicalCapacity = 10
 
 # Simulation Configuration
-numDays = 700
+numDays = 300
 
 # Visualization Configuration
 canvasWidth = 1000
