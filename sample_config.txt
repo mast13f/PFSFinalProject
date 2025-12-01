@@ -1,12 +1,12 @@
 # Disease Configuration
 diseaseName = COVID-19
-transmissionRate = 0.90
-transmissionDistance = 10
-recoveryRate = 0.1
-mortalityRate = 0.01
+transmissionRate = 0.99
+transmissionDistance = 20
+recoveryRate = 0.0
+mortalityRate = 0.0
 latentPeriod = 10
-infectiousPeriod = 30
-immunityDuration = 60
+infectiousPeriod = 60
+immunityDuration = 1
 
 # Population Configuration
 popSize = 2500

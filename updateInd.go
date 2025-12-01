@@ -268,10 +268,14 @@ func computeA(env *Environment, ind *Individual) float64 {
 
 	neighbors := infectedNeighbors(env, ind, Reff)
 
-	// If no infectious neighbors or hygiene is high, infection trigger is unlikely
-	if len(neighbors) == 0 || env.hygieneLevel >= 0.5 {
+	// If no infectious neighbors, no chance of becoming susceptible
+	if len(neighbors) == 0 {
 		return 0.0
 	}
+
+	// Hygiene reduces probability of becoming susceptible (not a hard block)
+	// Higher hygiene = lower susceptibility, scaled from 1.0 (no hygiene) to 0.1 (max hygiene)
+	hygieneFactor := 1.0 - 0.9*clamp01(env.hygieneLevel)
 
 	// ===============================
 	// Vaccination time-based immunity
@@ -305,7 +309,8 @@ func computeA(env *Environment, ind *Individual) float64 {
 	effectiveSusceptibility := 1.0 - protection
 
 	// Final probability that the individual becomes susceptible
-	return clamp01(effectiveSusceptibility)
+	// Incorporate hygiene factor to reduce (not block) susceptibility
+	return clamp01(effectiveSusceptibility * hygieneFactor)
 }
 
 // B: Susceptible→Infected
