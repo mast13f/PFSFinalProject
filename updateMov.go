@@ -13,10 +13,16 @@ import (
 // It randomly selects the direction to go, and randomly selects the length of movement
 // Then we perform update on individual's position
 func (ind *Individual) updateMove(env *Environment) {
-	if ind.movementPattern == nil || ind.healthStatus == Infected {
+	if ind.movementPattern == nil || ind.healthStatus == Dead {
 		return
 	}
 
+	if ind.healthStatus == Infected {
+		ind.movementPattern = &MovementPattern{
+			moveType:   Walk,
+			moveRadius: env.areaSize * 0.001,
+		}
+	}
 	// Movement radius depends on environment area size
 	moveRadius := ind.movementPattern.moveRadius
 	if moveRadius <= 0 {

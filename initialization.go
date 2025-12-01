@@ -25,14 +25,12 @@ func initializeDisease(name string, transmissionRate, transmissionDistance, reco
 func initializeEnvironment(
 	popSize int,
 	areaSize float64,
-	initialInfected int,
 	socialDistanceThreshold float64,
 	hygieneLevel float64,
 	mobilityRate float64,
 	vaccinationRate float64,
 	medicalCareLevel float64,
 	medicalCapacity int,
-	disease *Disease,
 ) *Environment {
 
 	env := &Environment{
@@ -51,8 +49,6 @@ func initializeEnvironment(
 		person := initializeIndividual(env)
 		env.population[i] = person
 	}
-
-	applyInitialInfections(env, initialInfected, disease)
 
 	return env
 }
@@ -73,8 +69,6 @@ func initializeIndividual(env *Environment) *Individual {
 	hygiene := rand.Float64()
 	socialDistance := rand.Float64()
 
-	//Everyone starts healthy
-	//Apply initial infection later
 	health := Healthy
 
 	// Random movement type at initialization
@@ -107,32 +101,10 @@ func initializeIndividual(env *Environment) *Individual {
 	}
 }
 
-// A simple helper for gender assignment
+// A simple helper for gender assignment (expand later if needed)
 func randomGender() string {
 	if rand.Intn(2) == 0 {
 		return "Male"
 	}
 	return "Female"
-}
-
-// apply initial infections will infected individual at random
-// number of total infected will be initialInfected(int)
-// if initialInfected>populationSize, then everyone is infected
-func applyInitialInfections(env *Environment, initialInfected int, disease *Disease) {
-	popSize := len(env.population)
-
-	if initialInfected >= popSize {
-		initialInfected = popSize
-	}
-
-	// Create shuffled list of indexes to infect at random
-	indexes := rand.Perm(popSize)
-
-	for i := 0; i < initialInfected; i++ {
-		person := env.population[indexes[i]]
-		person.healthStatus = Infected
-		person.disease = disease
-		person.daysInfected = 0
-		person.inHospital = true
-	}
 }
