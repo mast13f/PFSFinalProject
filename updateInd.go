@@ -63,6 +63,12 @@ func UpdatePopulationHealthStatus(env *Environment, rng *rand.Rand) error {
 		case Infected:
 			c = computeC(env, ind, infectedTotal)
 			d = computeD(env, ind)
+			// Ensure c + d <= 1 by normalizing if necessary
+			if c+d > 1.0 {
+				total := c + d
+				c = c / total
+				d = d / total
+			}
 		case Recovered:
 			e = computeE(env, ind)
 		case Dead:
@@ -407,6 +413,11 @@ func computeC(env *Environment, ind *Individual, infectedTotal int) float64 {
 	}
 
 	c := base * ageMult * overloadMult * careFactor * vaxFactor
+	// Note: c is clamped here, but caller must ensure c+d <= 1
+	// We cap c at 0.95 to leave room for recovery probability
+	if c > 0.95 {
+		c = 0.95
+	}
 	return clamp01(c)
 }
 
