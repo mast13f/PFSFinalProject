@@ -10,6 +10,10 @@ import (
 	"image/gif"
 	"math"
 	"os"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
 )
 
 // AnimateEnvironment generates a sequence of images over time.
@@ -33,6 +37,7 @@ func AnimateEnvironment(timePoints []*Environment, canvasWidth, frequency int, s
 
 // DrawToCanvas renders a single Environment (one time step) onto a square canvas of canvasWidth x canvasWidth pixels with a black background.
 // Each individual is drawn as a colored circle; scalingFactor controls the radius of each point in pixels.
+// At the top of the frame, a text overlay shows counts of each health state and total population.
 func (env *Environment) DrawToCanvas(canvasWidth int, scalingFactor float64) image.Image {
 	if env == nil {
 		panic("Can't Draw a nil Environment.")
@@ -58,7 +63,6 @@ func (env *Environment) DrawToCanvas(canvasWidth int, scalingFactor float64) ima
 		}
 
 		r, g, b := colorForHealthStatus(ind)
-
 		c.SetFillColor(canvas.MakeColor(r, g, b))
 
 		// Map position from [0, areaSize] to [0, canvasWidth]
@@ -75,7 +79,33 @@ func (env *Environment) DrawToCanvas(canvasWidth int, scalingFactor float64) ima
 		c.Fill()
 	}
 
-	return c.GetImage()
+	// Get underlying image from canvas
+	img := c.GetImage()
+
+	// Ensure we have an *image.RGBA to draw text on
+	var rgba *image.RGBA
+	if converted, ok := img.(*image.RGBA); ok {
+		rgba = converted
+	} else {
+		bounds := img.Bounds()
+		dst := image.NewRGBA(bounds)
+		draw.Draw(dst, bounds, img, bounds.Min, draw.Src)
+		rgba = dst
+	}
+
+	// Compute status counts
+	h, v, s, inf, r, d := statusCountsFromEnv(env)
+	// Total population (vaccinated is overlapping property, so not included in total)
+	total := h + s + inf + r + d
+
+	// Build overlay string (you can prepend time/day here if you store it in Environment)
+	label := fmt.Sprintf("N=%d | H:%d  S:%d  I:%d  R:%d  D:%d  V:%d",
+		total, h, s, inf, r, d, v)
+
+	// Draw label at the top-left
+	drawLabel(rgba, 10, 20, color.White, label)
+
+	return rgba
 }
 
 // colorForHealthStatus returns an RGB color for an individual based on their health status and vaccination status
@@ -135,6 +165,7 @@ func SaveEnvironmentGIF(filename string, frames []image.Image, delay int) error 
 
 // DrawEnvironmentPie renders a pie chart of population status for a single Environment at one time step.
 // The pie shows counts of Healthy, Vaccinated(alive), Susceptible, Infected, Recovered, and Dead.
+// A text overlay at the top also shows the exact counts and total population.
 func DrawEnvironmentPie(env *Environment, size int) image.Image {
 	if env == nil {
 		panic("Can't draw pie for nil Environment")
@@ -211,6 +242,7 @@ func DrawEnvironmentPie(env *Environment, size int) image.Image {
 			if angle < 0 {
 				angle += tau
 			}
+			// Rotate so that 12 o'clock is the starting reference, then go clockwise
 			angle = math.Mod(math.Pi/2-angle+tau, tau)
 
 			for _, sl := range slices {
@@ -222,11 +254,16 @@ func DrawEnvironmentPie(env *Environment, size int) image.Image {
 		}
 	}
 
+	// Overlay text with counts at the top of the pie chart
+	label := fmt.Sprintf("N=%d | H:%d  S:%d  I:%d  R:%d  D:%d  V:%d",
+		total, h, s, inf, r, d, v)
+	drawLabel(img, 10, 20, color.White, label)
+
 	return img
 }
 
 // statusCountsFromEnv returns the counts of individuals by status:
-// healthy (non-infected), vaccinated (alive), susceptible, infected,
+// healthy (non-infected), vaccinated (alive), susceptible, infected, recovered, and dead.
 func statusCountsFromEnv(env *Environment) (healthy, vaccinated, susceptible, infected, recovered, dead int) {
 	if env == nil {
 		return
@@ -247,7 +284,7 @@ func statusCountsFromEnv(env *Environment) (healthy, vaccinated, susceptible, in
 			healthy++
 		case Susceptible:
 			susceptible++
-		case Infected: // Already implemented in totalInfected
+		case Infected: // Already counted in totalInfected
 		case Recovered:
 			recovered++
 		case Dead:
@@ -274,4 +311,15 @@ func AnimateEnvironmentPie(timePoints []*Environment, size, frequency int) []ima
 	}
 
 	return images
+}
+
+// drawLabel renders a simple text string onto an RGBA image at (x, y) in white (or any given color).
+func drawLabel(img *image.RGBA, x, y int, col color.Color, s string) {
+	d := &font.Drawer{
+		Dst:  img,
+		Src:  image.NewUniform(col),
+		Face: basicfont.Face7x13,
+		Dot:  fixed.P(x, y),
+	}
+	d.DrawString(s)
 }
