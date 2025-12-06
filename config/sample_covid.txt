@@ -1,0 +1,32 @@
+# Disease Configuration
+diseaseName = sample_covid
+transmissionRate = 0.7
+transmissionDistance = 10
+recoveryRate = 0.2
+mortalityRate = 0.02
+latentPeriod = 7
+infectiousPeriod = 14
+immunityDuration = 80
+
+# Population Configuration
+popSize = 2500
+initialInfected = 200
+
+# Environment Configuration
+areaSize = 150.0
+socialDistanceThreshold = 0.1
+hygieneLevel = 0.3
+mobilityRate = 0.8
+vaccinationRate = 0.01
+medicalCareLevel = 0.3
+medicalCapacity = 100
+
+# Simulation Configuration
+numDays = 1000
+
+# Visualization Configuration
+canvasWidth = 1000
+pointRadius = 4.0
+frameFrequency = 3
+gifDelay = 8
+gifFilename = sample_covid.gif

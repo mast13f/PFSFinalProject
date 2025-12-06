@@ -1,0 +1,32 @@
+# Disease Configuration
+diseaseName = high_inf_low_dea
+transmissionRate = 0.3
+transmissionDistance = 10
+recoveryRate = 0.001
+mortalityRate = 0.0001
+latentPeriod = 10
+infectiousPeriod = 10
+immunityDuration = 60
+
+# Population Configuration
+popSize = 2500
+initialInfected = 50
+
+# Environment Configuration
+areaSize = 150.0
+socialDistanceThreshold = 0.1
+hygieneLevel = 0.1
+mobilityRate = 0.7
+vaccinationRate = 0.1
+medicalCareLevel = 0.5
+medicalCapacity = 80
+
+# Simulation Configuration
+numDays = 1000
+
+# Visualization Configuration
+canvasWidth = 1000
+pointRadius = 4.0
+frameFrequency = 3
+gifDelay = 8
+gifFilename = high_inf_low_dea.gif
