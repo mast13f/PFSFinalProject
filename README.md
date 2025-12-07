@@ -7,7 +7,7 @@ A computational epidemiological simulation written in Go that models infectious 
 [Ailisi Bao](https://github.com/ailisilob), [Peiyang Liu](https://github.com/mast13f/), [Shuaiqi Huang](https://github.com/idkwhatgitis), [Sihyun Park](https://github.com/SihyunPark99)
 
 ## Final Report
-Link to our final report
+See our final report [here.](https://docs.google.com/document/d/1Zp94CutJ-sAeT_oSuK9t_Yrk9xigCBARBCo86K1RhbA/edit?usp=sharing)
 
 
 ## Background
