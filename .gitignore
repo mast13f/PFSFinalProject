@@ -3,4 +3,4 @@ PFSFinalProject
 *.out
 *.test
 *.gif
-*.DS_Store
+.DS_Store
