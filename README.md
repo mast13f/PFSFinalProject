@@ -1,5 +1,4 @@
 # 02-601 Assignment Project: SIR-Based Epidemic Simulation
-## Sihyun Park, Shuaiqi Huang, Peiyang Liu, Ailisi Bao
 
 A computational epidemiological simulation written in Go that models infectious disease spread using an extended SIR (Susceptible-Infected-Recovered) framework with spatial movement, individual behaviors, and dynamic environmental responses.
 
