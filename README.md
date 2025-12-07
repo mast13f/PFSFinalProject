@@ -132,7 +132,7 @@ The simulation generates two animated GIFs:
 1. **Spatial map**: Shows the geographic distribution of individuals colored by health state
 2. **Pie chart**: Shows the proportional breakdown of the population across health states over time
 
-For interactive visualization, launch the R Shiny app:
+For interactive visualization, launch the R Shiny app: (Ailisi please review this)
 
 ```r
 shiny::runApp("rshiny.R")
