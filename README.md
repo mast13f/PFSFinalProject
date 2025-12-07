@@ -2,6 +2,14 @@
 
 A computational epidemiological simulation written in Go that models infectious disease spread using an extended SIR (Susceptible-Infected-Recovered) framework with spatial movement, individual behaviors, and dynamic environmental responses.
 
+## Authors
+
+Sihyun Park, Shuaiqi Huang, Peiyang Liu, Ailisi Bao
+
+## Final Report
+Link to our final report
+
+
 ## Background
 
 Pandemics have caused countless deaths and tremendous economic losses throughout history. From a scientific perspective, it is essential to predict the outbreak dynamics of infectious diseases before they spread to larger populations. The modeling of pandemics can contribute to the establishment of public health policies and the promotion of hygienic lifestyles, providing a scientific basis for effectively responding to large-scale outbreaks such as COVID-19.
@@ -131,6 +139,6 @@ By adjusting parameters, you can simulate vastly different epidemic scenarios:
 - **High transmission, low mortality**: Disease spreads widely but most individuals survive and recover
 - **Clustered spread**: Local outbreaks form based on movement patterns and population density
 
-## Authors
 
-Sihyun Park, Shuaiqi Huang, Peiyang Liu, Ailisi Bao
+
+
