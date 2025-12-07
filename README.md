@@ -6,8 +6,10 @@ A computational epidemiological simulation written in Go that models infectious 
 
 [Ailisi Bao](https://github.com/ailisilob), [Peiyang Liu](https://github.com/mast13f/), [Shuaiqi Huang](https://github.com/idkwhatgitis), [Sihyun Park](https://github.com/SihyunPark99)
 
-## Final Report
-See our final report [here.](https://docs.google.com/document/d/1Zp94CutJ-sAeT_oSuK9t_Yrk9xigCBARBCo86K1RhbA/edit?usp=sharing)
+## Final Report and Video Demonstration
+See our final report [here.](https://docs.google.com/document/d/1Zp94CutJ-sAeT_oSuK9t_Yrk9xigCBARBCo86K1RhbA/edit?usp=sharing) 
+
+See our video demonstration [here.]
 
 
 ## Background
@@ -48,7 +50,19 @@ PFSFinalProject/
 ├── config/              # Example configuration files
 └── go.mod               # Go module definition
 ```
+## Libraries
 
+### Go
+- `image`, `image/color`, `image/gif`, `image/png`, `image/draw` — Image creation and manipulation
+- `math`, `math/rand` — Mathematical operations and random number generation
+- `golang.org/x/image/font`, `golang.org/x/image/font/basicfont` — Font rendering for visualization labels
+- `golang.org/x/image/math/fixed` — Fixed-point math for text positioning
+- `github.com/llgcode/draw2d/draw2dimg` — 2D graphics rendering
+
+### R
+- `shiny` — Interactive web application framework
+- `processx` — Process management
+- `magick` — Image processing and GIF handling
 ## Usage
 
 ### Running the Simulation
