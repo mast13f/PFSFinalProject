@@ -9,7 +9,7 @@ A computational epidemiological simulation written in Go that models infectious 
 ## Final Report and Video Demonstration
 See our final report [here.](https://docs.google.com/document/d/1Zp94CutJ-sAeT_oSuK9t_Yrk9xigCBARBCo86K1RhbA/edit?usp=sharing) 
 
-See our video demonstration [here.]
+See our video demonstration [here.](https://drive.google.com/file/d/17iBoekFm2WLdVxUtDImnQcpPpTIvPMbO/view?usp=sharing)
 
 
 ## Background
