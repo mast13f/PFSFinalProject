@@ -8,7 +8,7 @@ options(shiny.maxRequestSize = 5 * 1024^2)  # === CHANGED/ADDED ===
 # ---------------------------------------------------------------------------
 
 # -------------------- Hardcoded configuration  --------------------
-project_dir <- "/Users/baoailisi/go/src/PFSFinalProject"   # Root directory of the Go project
+project_dir <- ".../go/src/PFSFinalProject"   # Root directory of the Go project
 exec_cmd <- "./PFSFinalProject"                           # Executable to run under project_dir
 default_timeout <- 300                                    # Timeout in seconds
 # ----------------------------------------------------------------

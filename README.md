@@ -132,12 +132,15 @@ The simulation generates two animated GIFs:
 1. **Spatial map**: Shows the geographic distribution of individuals colored by health state
 2. **Pie chart**: Shows the proportional breakdown of the population across health states over time
 
-For interactive visualization, launch the R Shiny app: (Ailisi please review this)
+For interactive visualization, launch the R Shiny app: 
 
 ```r
 shiny::runApp("rshiny.R")
 ```
-
+The line 11 of the RScript file path needs to be change replacing ... to where you put the project folder.
+```r
+project_dir <- ".../go/src/PFSFinalProject"
+```
 ## Output
 
 The simulation automatically creates an `output_gif/` folder (if it doesn't exist) and generates:
